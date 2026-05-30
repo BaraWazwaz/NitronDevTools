@@ -5,11 +5,11 @@
  */
 #pragma once
 
-#include <future>      // std::future, std::async
-#include <optional>    // std::optional
-#include <exception>   // std::exception_ptr, std::current_exception, std::rethrow_exception
-#include <mutex>       // std::mutex, std::lock_guard
-#include "Functor.hpp" // nitron::LooseFunctor
+#include <future>           // std::future, std::async
+#include <optional>         // std::optional
+#include <exception>        // std::exception_ptr, std::current_exception, std::rethrow_exception
+#include <mutex>            // std::mutex, std::lock_guard
+#include "util/Functor.hpp" // nitron::LooseFunctor
 
 namespace nitron
 {

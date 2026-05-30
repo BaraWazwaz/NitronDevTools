@@ -1,85 +1,42 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <iostream>
-#include <sstream>
-#include "Table.hpp"
-#include "Promise.hpp"
-#include "tests/Spec.hpp"
+#include <iomanip>
+#include "index.hpp"
 
 void runTests()
 {
-    using nitron::Spec;
-    using nitron::Test;
-    using nitron::Record;
-    using nitron::Table;
-    using Promise = nitron::Promise<int>;
+}
 
-    Spec main ("Main");
-    
-    main
-    .openSubSpec("nitron::Table")
-        .addTest(Test::returnsValue<std::string>(
-            []() -> std::string {
-                Table table;
-
-                table.emplaceBackField<int>("id", 0);
-                table.emplaceBackField<std::string>("name", "Anonymous");
-                table.emplaceBackField<bool>("active", true);
-
-                Record record;
-                record.emplaceBackField<int>(1);
-                record.emplaceBackField<std::string>(std::string("Ahmad"));
-                record.emplaceBackField<bool>(true);
-                table.emplaceBackRecord(std::move(record));
-
-                std::stringstream str;
-                str << table;
-                return str.str();
-            },
-            [](std::string const& tableConent) -> bool {
-                return tableConent ==
-                "----------------------------------------------\n"
-                "|           id |         name |       active |\n"
-                "----------------------------------------------\n"
-                "|            1 |        Ahmad |            1 |\n"
-                "----------------------------------------------\n";
-            },
-            "nitron::Table can recieve records and output it correctly."
-        ))
-    .closeSubSpec()
-    .openSubSpec("nitron::Promise")
-        .addTest(Test::returnsValue<int>(
-            []() {
-                Promise p (std::plus<int>(), 4, 7);
-                return p.get();
-            },
-            [](long long const& x) { return x == 11; },
-            "nitron::Promise<long long> should resolve on get()"
-        ))
-        .addTest(Test::throwsValueOfType<std::runtime_error>(
-            []() {
-                Promise p ([](){
-                    throw std::runtime_error("Hello");
-                    return 0;
-                });
-                p.get();
-            },
-            "nitron::Promise<long long> should receive a thrown std::runtime_error on get()"
-        ))
-    .closeSubSpec();
-    
-    main.displayResult(std::cout);
+template <nitron::Number T>
+T f(T x)
+{
+    return nitron::exp<T>(-x*x);
 }
 
 int experimenting()
 {
-    return 0;
+    #ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    #endif
+    std::cout << std::setprecision(10);
+    for (long double x = -2; x <= 2; x += 0.05) {
+        auto [y, d] = f(nitron::DualNumber<long double>(x, 1));
+        y = std::round(y * (1ll << 20ll)) / (1ll << 20ll);
+        d = std::round(d * (1ll << 20ll)) / (1ll << 20ll);
+        std::cout << "x = " << std::setw(15) << x << ", ";
+        std::cout << "f(x) = " << std::setw(13) << y << ", ";
+        std::cout << "f'(x) = " << std::setw(13) << d << std::endl;
+    }
+    return 1;
 }
 
 int main()
 {
     int status = experimenting();
     if (status != 0)
-        return status;
-    else
-        runTests();
+        return 0;
+    runTests();
     return 0;
 }

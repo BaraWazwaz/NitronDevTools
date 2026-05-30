@@ -5,10 +5,10 @@
  */
 #pragma once
 
-#include <iostream>    // std::ostream
-#include <string>      // std::string
-#include <vector>      // std::vector
-#include "Functor.hpp" // nitron::LooseFunctor
+#include <iostream>         // std::ostream
+#include <string>           // std::string
+#include <vector>           // std::vector
+#include "util/Functor.hpp" // nitron::LooseFunctor
 
 namespace nitron
 {

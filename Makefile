@@ -1,6 +1,6 @@
 # --- Configuration ---
 CXX      := g++
-CXXFLAGS := -Wall -Wextra -std=c++20 -Iinclude -MMD -MP
+CXXFLAGS := -Wall -Wextra -std=c++20 -I include -MMD -MP -finput-charset=UTF-8 -fexec-charset=UTF-8 -D_GNU_SOURCE -O3 -pthread
 
 # --- Project Structure ---
 BIN_DIR  := bin
@@ -18,9 +18,9 @@ OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
 DEPS    := $(OBJECTS:.o=.d)
 
 # --- Build Rules ---
-.PHONY: all clean run docs
+.PHONY: build clean run docs all
 
-all: $(TARGET)
+build: $(TARGET)
 
 # --- Link ---
 $(TARGET): $(OBJECTS)
@@ -31,8 +31,7 @@ $(TARGET): $(OBJECTS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
--include $(DEPS)
+	-include $(DEPS)
 
 docs: $(DOC_DIR)/output/html/index.html
 
@@ -45,7 +44,7 @@ $(DOC_DIR)/Doxyfile:
 	mkdir -p $(DOC_DIR)
 	doxygen -g $(DOC_DIR)/Doxyfile
 
-run: all
+run: build
 	./$(TARGET)
 
 clean:

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Table.hpp"
+#include "data/Table.hpp"
 
 namespace nitron
 {

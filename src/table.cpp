@@ -1,5 +1,5 @@
 #include <iomanip>
-#include "Table.hpp"
+#include "data/Table.hpp"
 
 namespace nitron
 {

@@ -1,4 +1,4 @@
-#include "tests/Spec.hpp"
+#include "dev/Spec.hpp"
 
 namespace nitron
 {

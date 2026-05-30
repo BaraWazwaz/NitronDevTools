@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Singleton.hpp"
+#include "data/Singleton.hpp"
 
 namespace nitron
 {

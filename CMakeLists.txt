@@ -1,39 +1,81 @@
 cmake_minimum_required(VERSION 3.19)
 
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/project.json" PROJECT_JSON)
+# ============================================================================
+# Read project.json
+# ============================================================================
 
-string(JSON PROJECT_NAME GET "${PROJECT_JSON}" "name")
-string(JSON PROJECT_VERSION GET "${PROJECT_JSON}" "version")
-string(JSON PROJECT_STANDARD GET "${PROJECT_JSON}" "standard")
+file(READ
+    "${CMAKE_CURRENT_SOURCE_DIR}/project.json"
+    PROJECT_JSON
+)
 
-if(PROJECT_NAME STREQUAL "PROJECT_NAME-NOTFOUND" OR PROJECT_NAME STREQUAL "")
+string(JSON PROJECT_NAME
+    GET "${PROJECT_JSON}" "name"
+)
+
+string(JSON PROJECT_VERSION
+    GET "${PROJECT_JSON}" "version"
+)
+
+string(JSON PROJECT_STANDARD
+    GET "${PROJECT_JSON}" "standard"
+)
+
+if(PROJECT_NAME STREQUAL "PROJECT_NAME-NOTFOUND" OR
+   PROJECT_NAME STREQUAL "")
+
     message(FATAL_ERROR
         "project.json does not contain a valid 'name'."
     )
+
 endif()
 
-if(PROJECT_VERSION STREQUAL "PROJECT_VERSION-NOTFOUND" OR PROJECT_VERSION STREQUAL "")
+if(PROJECT_VERSION STREQUAL "PROJECT_VERSION-NOTFOUND" OR
+   PROJECT_VERSION STREQUAL "")
+
     set(PROJECT_VERSION "0.1.0")
+
 endif()
 
-if(PROJECT_STANDARD STREQUAL "PROJECT_STANDARD-NOTFOUND" OR PROJECT_STANDARD STREQUAL "")
+if(PROJECT_STANDARD STREQUAL "PROJECT_STANDARD-NOTFOUND" OR
+   PROJECT_STANDARD STREQUAL "")
+
     set(PROJECT_STANDARD 20)
+
 endif()
+
+# ============================================================================
+# Project
+# ============================================================================
 
 project(${PROJECT_NAME}
     VERSION ${PROJECT_VERSION}
     LANGUAGES CXX
 )
 
-set(CMAKE_CXX_STANDARD ${PROJECT_STANDARD})
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# ============================================================================
+# C++ configuration
+# ============================================================================
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD
+    ${PROJECT_STANDARD}
+)
 
-# ---------------------------------------------------------------------------
-# Project paths
-# ---------------------------------------------------------------------------
+set(CMAKE_CXX_STANDARD_REQUIRED
+    ON
+)
+
+set(CMAKE_CXX_EXTENSIONS
+    OFF
+)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS
+    ON
+)
+
+# ============================================================================
+# Project directories
+# ============================================================================
 
 set(PROJECT_INCLUDE_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -43,9 +85,9 @@ set(PROJECT_SRC_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Dependencies
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 include(FetchContent)
 
@@ -56,34 +98,47 @@ string(JSON DEPENDENCY_COUNT
 )
 
 if(DEPENDENCY_COUNT GREATER 0)
+
     math(EXPR LAST_DEPENDENCY_INDEX
         "${DEPENDENCY_COUNT} - 1"
     )
 
-    # Declare all dependencies first.
-    #
-    # This is important because dependencies can themselves depend on
-    # other targets that need to exist before the project is configured.
+    # ------------------------------------------------------------------------
+    # Declare dependencies
+    # ------------------------------------------------------------------------
+
     foreach(INDEX RANGE 0 ${LAST_DEPENDENCY_INDEX})
 
         string(JSON DEP_ALIAS
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "alias"
+            GET
+            "${PROJECT_JSON}"
+            "dependencies"
+            ${INDEX}
+            "alias"
         )
 
         string(JSON DEP_URL
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "url"
+            GET
+            "${PROJECT_JSON}"
+            "dependencies"
+            ${INDEX}
+            "url"
         )
 
         string(JSON DEP_TAG
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "tag"
+            GET
+            "${PROJECT_JSON}"
+            "dependencies"
+            ${INDEX}
+            "tag"
         )
 
         string(JSON DEP_TARGET
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "target"
+            GET
+            "${PROJECT_JSON}"
+            "dependencies"
+            ${INDEX}
+            "target"
         )
 
         if(DEP_ALIAS STREQUAL "" OR
@@ -92,6 +147,7 @@ if(DEPENDENCY_COUNT GREATER 0)
             message(FATAL_ERROR
                 "Dependency at index ${INDEX} is missing 'alias'."
             )
+
         endif()
 
         if(DEP_URL STREQUAL "" OR
@@ -100,6 +156,7 @@ if(DEPENDENCY_COUNT GREATER 0)
             message(FATAL_ERROR
                 "Dependency '${DEP_ALIAS}' is missing 'url'."
             )
+
         endif()
 
         if(DEP_TAG STREQUAL "" OR
@@ -108,6 +165,7 @@ if(DEPENDENCY_COUNT GREATER 0)
             message(FATAL_ERROR
                 "Dependency '${DEP_ALIAS}' is missing 'tag'."
             )
+
         endif()
 
         if(DEP_TARGET STREQUAL "" OR
@@ -116,31 +174,47 @@ if(DEPENDENCY_COUNT GREATER 0)
             message(FATAL_ERROR
                 "Dependency '${DEP_ALIAS}' is missing 'target'."
             )
+
         endif()
 
         FetchContent_Declare(
             ${DEP_ALIAS}
-            GIT_REPOSITORY "${DEP_URL}"
-            GIT_TAG "${DEP_TAG}"
+
+            GIT_REPOSITORY
+                "${DEP_URL}"
+
+            GIT_TAG
+                "${DEP_TAG}"
         )
 
     endforeach()
 
-    # Make all dependencies available.
+    # ------------------------------------------------------------------------
+    # Make dependencies available
+    # ------------------------------------------------------------------------
+
     foreach(INDEX RANGE 0 ${LAST_DEPENDENCY_INDEX})
 
         string(JSON DEP_ALIAS
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "alias"
+            GET
+            "${PROJECT_JSON}"
+            "dependencies"
+            ${INDEX}
+            "alias"
         )
 
-        FetchContent_MakeAvailable(${DEP_ALIAS})
+        FetchContent_MakeAvailable(
+            ${DEP_ALIAS}
+        )
 
     endforeach()
+
 endif()
 
-# ---------------------------------------------------------------------------
-# Project
-# ---------------------------------------------------------------------------
+# ============================================================================
+# Project targets
+# ============================================================================
 
-add_subdirectory(src)
+add_subdirectory(
+    "${PROJECT_SRC_DIR}"
+)

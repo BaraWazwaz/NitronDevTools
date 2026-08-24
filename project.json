@@ -2,7 +2,7 @@
     "schema": 1,
     "name": "nitron",
     "url": "https://github.com/BaraWazwaz/NitronDevTools",
-    "version": "1.0.2",
+    "version": "1.0.1",
     "license": "MIT",
     "description": "",
     "language": "C++",

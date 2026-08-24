@@ -1,0 +1,24 @@
+{
+  "project": {
+    "name": "nitron",
+    "url": "https://github.com/BaraWazwaz/NitronDevTools",
+    "tag": "1.0.0",
+    "target": "nitron::nitron",
+    "includes": "include"
+  },
+  "dependencies": [
+    {
+      "name": "json",
+      "url": "https://github.com/nlohmann/json",
+      "tag": "v3.11.3",
+      "target": "nlohmann_json::nlohmann_json"
+    },
+    {
+      "name": "fmt",
+      "url": "https://github.com/fmtlib/fmt",
+      "tag": "11.0.2",
+      "target": "fmt::fmt",
+      "includes": "include"
+    }
+  ]
+}

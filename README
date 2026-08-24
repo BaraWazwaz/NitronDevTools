@@ -1,0 +1,27 @@
+# Design Patterns
+
+This project implements several utility tools for Development in C++.
+
+# Contribution
+
+Please let me know if you have any suggestions!
+
+PRs, Comments and other methods are all welcome.
+
+# Headers
+
+```md
+nitron/
+├── functor.hpp
+│   ├── Description: Functor templates concepts to strongly specify lambda expressions
+│   └── Utilities:
+│       └── concepts: StrictFunctor, LooseFunctor
+├── pass.hpp
+│   ├── Description: Development alerts for incomplete code
+│   └── Utilities:
+│       └── defines: NITRON_IN_PROGRESS, NITRON_REQUIRES_SPECIALIZATION
+└── spec.hpp
+    ├── Description: Test-Driven-Development support
+    └── Utilities:
+        └── classes: Test, Spec
+```

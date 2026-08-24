@@ -1,85 +1,29 @@
 #include <iostream>
-#include <sstream>
-#include "Table.hpp"
-#include "Promise.hpp"
-#include "tests/Spec.hpp"
+#include <nitron/spec.hpp>
 
-void runTests()
-{
-    using nitron::Spec;
-    using nitron::Test;
-    using nitron::Record;
-    using nitron::Table;
-    using Promise = nitron::Promise<int>;
+int main() {
+    using nitron::Spec, nitron::Test;
 
-    Spec main ("Main");
-    
-    main
-    .openSubSpec("nitron::Table")
-        .addTest(Test::returnsValue<std::string>(
-            []() -> std::string {
-                Table table;
-
-                table.emplaceBackField<int>("id", 0);
-                table.emplaceBackField<std::string>("name", "Anonymous");
-                table.emplaceBackField<bool>("active", true);
-
-                Record record;
-                record.emplaceBackField<int>(1);
-                record.emplaceBackField<std::string>(std::string("Ahmad"));
-                record.emplaceBackField<bool>(true);
-                table.emplaceBackRecord(std::move(record));
-
-                std::stringstream str;
-                str << table;
-                return str.str();
+    Spec("Test-Driven-Development [TDD]")
+    .addTest(Test::returnsValue<long long>(
+        []() -> long long {
+            long long n = 5;
+            return n * n;
+        },
+        [](long long x) -> bool {
+            return x == 25;
+        },
+        "5x5 = 25"
+    ).expectedToPass())
+    .openSubSpec("Nested Spec")
+        .addTest(Test::throwsValueOfType<int>(
+            []() -> void {
+                throw std::invalid_argument("Hello");
             },
-            [](std::string const& tableConent) -> bool {
-                return tableConent ==
-                "----------------------------------------------\n"
-                "|           id |         name |       active |\n"
-                "----------------------------------------------\n"
-                "|            1 |        Ahmad |            1 |\n"
-                "----------------------------------------------\n";
-            },
-            "nitron::Table can recieve records and output it correctly."
-        ))
+            "It should fail to throw `int`"
+        ).expectedToFail())
     .closeSubSpec()
-    .openSubSpec("nitron::Promise")
-        .addTest(Test::returnsValue<int>(
-            []() {
-                Promise p (std::plus<int>(), 4, 7);
-                return p.get();
-            },
-            [](long long const& x) { return x == 11; },
-            "nitron::Promise<long long> should resolve on get()"
-        ))
-        .addTest(Test::throwsValueOfType<std::runtime_error>(
-            []() {
-                Promise p ([](){
-                    throw std::runtime_error("Hello");
-                    return 0;
-                });
-                p.get();
-            },
-            "nitron::Promise<long long> should receive a thrown std::runtime_error on get()"
-        ))
-    .closeSubSpec();
+    .displayResult(std::cout);
     
-    main.displayResult(std::cout);
-}
-
-int experimenting()
-{
-    return 0;
-}
-
-int main()
-{
-    int status = experimenting();
-    if (status != 0)
-        return status;
-    else
-        runTests();
     return 0;
 }

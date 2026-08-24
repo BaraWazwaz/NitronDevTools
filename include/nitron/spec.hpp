@@ -17,12 +17,17 @@ class Test
 {
 public:
     /// @brief check if the function provided throws a value of expected type
+    /// @param function   tested function
+    /// @param desciption test title or message
     template <typename T, typename FunctorTested>
     requires LooseFunctor<FunctorTested, void>
     static Test throwsValueOfType(FunctorTested&& function,
                                   std::string&& description = "[No Description]");
 
     /// @brief check if the function provided throws a value that passes provided checker
+    /// @param function   tested function
+    /// @param checker    function to test the throw value of the tested function
+    /// @param desciption test title or message
     template <typename T, typename FunctorTested, typename FunctorChecker>
     requires LooseFunctor<FunctorTested, void> &&
              LooseFunctor<FunctorChecker, bool, T>
@@ -31,6 +36,9 @@ public:
                             std::string&& description = "[No Description]");
 
     /// @brief check if the function provided returns a value the passes provided checker
+    /// @param function   tested function
+    /// @param checker    function to test the return value of the tested function
+    /// @param desciption test title or message
     template <typename T, typename FunctorTested, typename FunctorChecker>
     requires LooseFunctor<FunctorTested, T> &&
              LooseFunctor<FunctorChecker, bool, T>
@@ -39,6 +47,7 @@ public:
                              std::string&& description = "[No Description]");
 
     /// @brief output testing verdict information
+    /// @param os   output scream used to print results
     /// @param tabs number of `"\t"` characters used in indentation
     bool displayResult(std::ostream& os, std::size_t tabs = 0) const;
 
@@ -57,21 +66,31 @@ private:
 class Spec
 {
 public:
-
     Spec() = default;
     Spec(std::string&& title);
 
-    Spec& closeSubSpec();
-    Spec& openSubSpec(std::string&& title);
+    /// @brief adds a new test to Spec suite
+    /// @param test Test object to add to suite
+    /// @return reference to current Spec 
     Spec& addTest(Test&& test);
+    
+    /// @brief creates a nested Spec inside current Spec and enters it
+    /// @param title title of nested Spec created
+    /// @return reference to nested Spec created
+    Spec& openSubSpec(std::string&& title);
+
+    /// @brief finishes working on nested Spec and goes back to parent
+    /// @return reference to parent Spec
+    Spec& closeSubSpec();
 
     /// @brief output testing verdict information
+    /// @param os   output scream used to print results
     /// @param tabs number of `"\t"` characters used in indentation
     bool displayResult(std::ostream& os, std::size_t tabs = 0) const;
 
 private:
-    std::string title = "Untitled";
-    Spec* parent = this;
+    std::string title = "[Untitled]";
+    Spec* parent      = this;
     std::vector<Test> direct;
     std::vector<Spec> children;
 };

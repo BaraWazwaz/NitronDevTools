@@ -5,11 +5,11 @@ namespace nitron
 
 bool Test::displayResult(std::ostream& os, std::size_t tabs) const
 {
-    if (verdict) {
+    if (verdict)
         os << std::string(tabs, '\t') << "[Passed]: { " << description << " }\n";
-    } else {
+    else
         os << std::string(tabs, '\t') << "[Failed]: { " << description << " }\n";
-    }
+
     return verdict;
 }
 
@@ -41,19 +41,16 @@ bool Spec::displayResult(std::ostream& os, std::size_t tabs) const {
     bool verdict = true;
     os << std::string(tabs, '\t') << "Spec { " << title << " } :\n";
     
-    for (Test const& test : direct) {
+    for (Test const& test : direct)
         verdict = test.displayResult(os, tabs + 1) && verdict;
-    }
     
-    for (Spec const& spec : children) {
+    for (Spec const& spec : children)
         verdict = spec.displayResult(os, tabs + 1) && verdict;
-    }
 
-    if (verdict) {
+    if (verdict)
         os << std::string(tabs, '\t') << "Verdict: [Passed]\n";
-    } else {
+    else
         os << std::string(tabs, '\t') << "Verdict: [Failed]\n";
-    }
 
     return verdict;
 }

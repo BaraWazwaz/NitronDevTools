@@ -1,4 +1,11 @@
 {
+  "project": {
+    "name": "nitron",
+    "url": "https://github.com/BaraWazwaz/NitronDevTools",
+    "tag": "1.0.0",
+    "target": "nitron::nitron",
+    "includes": "include"
+  },
   "dependencies": [
     {
       "name": "json",

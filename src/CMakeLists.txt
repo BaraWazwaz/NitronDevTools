@@ -1,8 +1,8 @@
 # ============================================================================
-# Find all C++ source files
+# Discover library sources
 # ============================================================================
 
-file(GLOB_RECURSE PROJECT_ALL_SOURCES
+file(GLOB_RECURSE PROJECT_LIBRARY_SOURCES
     CONFIGURE_DEPENDS
 
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -10,152 +10,81 @@ file(GLOB_RECURSE PROJECT_ALL_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
 )
 
-# ============================================================================
-# Find main.cpp
-#
-# main.cpp belongs to the executable, not the reusable library.
-# ============================================================================
-
-set(PROJECT_MAIN_SOURCE "")
-
-foreach(SOURCE_FILE IN LISTS PROJECT_ALL_SOURCES)
-
-    get_filename_component(
-        SOURCE_NAME
-        "${SOURCE_FILE}"
-        NAME
-    )
-
-    if(SOURCE_NAME STREQUAL "main.cpp")
-
-        if(PROJECT_MAIN_SOURCE)
-
-            message(FATAL_ERROR
-                "Multiple main.cpp files were found:\n"
-                "  ${PROJECT_MAIN_SOURCE}\n"
-                "  ${SOURCE_FILE}\n"
-                "Only one executable entry point is allowed."
-            )
-
-        endif()
-
-        set(PROJECT_MAIN_SOURCE
-            "${SOURCE_FILE}"
-        )
-
-    endif()
-
-endforeach()
-
-# ============================================================================
-# Library sources
-#
-# Everything except main.cpp belongs to the reusable library.
-# ============================================================================
-
-set(PROJECT_LIBRARY_SOURCES
-    ${PROJECT_ALL_SOURCES}
+# main.cpp belongs to the executable, not the library.
+list(FILTER PROJECT_LIBRARY_SOURCES
+    EXCLUDE REGEX
+    ".*/main\\.cpp$"
 )
 
-if(PROJECT_MAIN_SOURCE)
-
-    list(REMOVE_ITEM
-        PROJECT_LIBRARY_SOURCES
-        "${PROJECT_MAIN_SOURCE}"
-    )
-
-endif()
-
 # ============================================================================
-# Library target
+# Create library
 # ============================================================================
 
 if(PROJECT_LIBRARY_SOURCES)
 
     # ------------------------------------------------------------------------
-    # Normal library project
-    #
-    # The project contains .cpp/.cc/.cxx implementation files.
+    # Compiled library
     # ------------------------------------------------------------------------
 
-    add_library(
-        ${PROJECT_NAME}
+    add_library(${PROJECT_NAME}
         STATIC
             ${PROJECT_LIBRARY_SOURCES}
     )
 
+    # Public namespaced target.
+    add_library(${PROJECT_NAME}::${PROJECT_NAME}
+        ALIAS
+            ${PROJECT_NAME}
+    )
+
+    target_include_directories(${PROJECT_NAME}
+        PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+    )
+
+    target_compile_features(${PROJECT_NAME}
+        PUBLIC
+            cxx_std_${PROJECT_STANDARD}
+    )
+
+    set(PROJECT_DEPENDENCY_SCOPE PUBLIC)
+
 else()
 
     # ------------------------------------------------------------------------
-    # Header-only / executable-only project
-    #
-    # There are no library implementation files.
-    #
-    # INTERFACE allows us to expose a stable target anyway.
+    # Header-only library
     # ------------------------------------------------------------------------
 
-    add_library(
-        ${PROJECT_NAME}
+    add_library(${PROJECT_NAME}
         INTERFACE
     )
 
-endif()
+    # Public namespaced target.
+    add_library(${PROJECT_NAME}::${PROJECT_NAME}
+        ALIAS
+            ${PROJECT_NAME}
+    )
 
-# ============================================================================
-# Public target
-#
-# This is the target consumers should use.
-#
-# Example:
-#
-#     nitron::nitron
-#
-#     yugioh::yugioh
-#
-# ============================================================================
-
-add_library(
-    ${PROJECT_NAME}::${PROJECT_NAME}
-    ALIAS
-    ${PROJECT_NAME}
-)
-
-# ============================================================================
-# Public include directory
-# ============================================================================
-
-if(EXISTS "${PROJECT_INCLUDE_DIR}")
-
-    target_include_directories(
-        ${PROJECT_NAME}
-
+    target_include_directories(${PROJECT_NAME}
         INTERFACE
-            "${PROJECT_INCLUDE_DIR}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../include"
     )
 
-endif()
-
-# If this is a compiled library, its own source compilation also needs
-# access to the public headers.
-if(PROJECT_LIBRARY_SOURCES)
-
-    target_include_directories(
-        ${PROJECT_NAME}
-
-        PUBLIC
-            "${PROJECT_INCLUDE_DIR}"
+    target_compile_features(${PROJECT_NAME}
+        INTERFACE
+            cxx_std_${PROJECT_STANDARD}
     )
+
+    set(PROJECT_DEPENDENCY_SCOPE INTERFACE)
 
 endif()
 
 # ============================================================================
-# Library dependencies
+# Link dependencies into the library
 # ============================================================================
 
 string(JSON DEPENDENCY_COUNT
-    LENGTH
-    "${PROJECT_JSON}"
-    "dependencies"
+    LENGTH "${PROJECT_JSON}" "dependencies"
 )
 
 if(DEPENDENCY_COUNT GREATER 0)
@@ -167,44 +96,31 @@ if(DEPENDENCY_COUNT GREATER 0)
     foreach(INDEX RANGE 0 ${LAST_DEPENDENCY_INDEX})
 
         string(JSON DEP_ALIAS
-            GET
-            "${PROJECT_JSON}"
-            "dependencies"
-            ${INDEX}
-            "alias"
+            GET "${PROJECT_JSON}"
+            "dependencies" ${INDEX} "alias"
         )
 
         string(JSON DEP_TARGET
-            GET
-            "${PROJECT_JSON}"
-            "dependencies"
-            ${INDEX}
-            "target"
+            GET "${PROJECT_JSON}"
+            "dependencies" ${INDEX} "target"
         )
 
-        if(DEP_TARGET STREQUAL "" OR
-           DEP_TARGET STREQUAL "DEP_TARGET-NOTFOUND")
-
+        if(DEP_TARGET STREQUAL "")
             message(FATAL_ERROR
-                "Dependency '${DEP_ALIAS}' does not specify a "
-                "valid CMake 'target'."
+                "Dependency '${DEP_ALIAS}' does not specify "
+                "a CMake 'target'."
             )
-
         endif()
 
         if(NOT TARGET ${DEP_TARGET})
-
             message(FATAL_ERROR
                 "Dependency '${DEP_ALIAS}' requested target "
                 "'${DEP_TARGET}', but that CMake target does not exist."
             )
-
         endif()
 
-        target_link_libraries(
-            ${PROJECT_NAME}
-
-            INTERFACE
+        target_link_libraries(${PROJECT_NAME}
+            ${PROJECT_DEPENDENCY_SCOPE}
                 ${DEP_TARGET}
         )
 
@@ -214,44 +130,39 @@ endif()
 
 # ============================================================================
 # Optional executable
-#
-# If main.cpp exists, build an executable that links against the library.
 # ============================================================================
 
-if(PROJECT_MAIN_SOURCE)
+set(PROJECT_MAIN
+    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
+)
 
-    set(PROJECT_EXECUTABLE
-        "${PROJECT_NAME}_app"
+if(EXISTS "${PROJECT_MAIN}")
+
+    add_executable(${PROJECT_NAME}_app
+        "${PROJECT_MAIN}"
     )
 
-    add_executable(
-        ${PROJECT_EXECUTABLE}
-        "${PROJECT_MAIN_SOURCE}"
-    )
-
-    target_link_libraries(
-        ${PROJECT_EXECUTABLE}
+    target_link_libraries(${PROJECT_NAME}_app
         PRIVATE
-            ${PROJECT_NAME}
+            ${PROJECT_NAME}::${PROJECT_NAME}
     )
 
-    if(EXISTS "${PROJECT_INCLUDE_DIR}")
+    target_include_directories(${PROJECT_NAME}_app
+        PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+    )
 
-        target_include_directories(
-            ${PROJECT_EXECUTABLE}
-            PRIVATE
-                "${PROJECT_INCLUDE_DIR}"
-        )
+    target_compile_features(${PROJECT_NAME}_app
+        PRIVATE
+            cxx_std_${PROJECT_STANDARD}
+    )
 
-    endif()
+    set_target_properties(${PROJECT_NAME}_app PROPERTIES
+        OUTPUT_NAME
+            "${PROJECT_NAME}"
 
-    set_target_properties(
-        ${PROJECT_EXECUTABLE}
-        PROPERTIES
-            OUTPUT_NAME
-                "${PROJECT_NAME}"
-            RUNTIME_OUTPUT_DIRECTORY
-                "${CMAKE_SOURCE_DIR}/dist"
+        RUNTIME_OUTPUT_DIRECTORY
+            "${CMAKE_CURRENT_SOURCE_DIR}/../dist"
     )
 
 endif()

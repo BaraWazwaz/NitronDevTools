@@ -1,4 +1,11 @@
-.vscode
-docs/output/
+# IDE
+.vscode/*
+!.vscode/c_cpp_properties.json
+
+# Environment
+.env*
+!.env.example
+
+# Output
 build/
-bin/
+dist/

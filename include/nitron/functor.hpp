@@ -1,12 +1,11 @@
 /**
  * @file Functor.hpp
  * @brief implements some Functor concepts
- * @copyright 2026 Bara Wazwaz. Released under the GNU License
  */
 #pragma once
 
-#include <concepts>    // std::invocable, std::convertible_to
-#include <type_traits> // std::invoke_result_t, std::is_invocable_r_v
+#include <concepts>
+#include <type_traits>
 
 namespace nitron
 {

@@ -1,42 +1,29 @@
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <iostream>
-#include <iomanip>
-#include "index.hpp"
+#include <nitron/spec.hpp>
 
-void runTests()
-{
-}
+int main() {
+    using nitron::Spec, nitron::Test;
 
-template <nitron::Number T>
-T f(T x)
-{
-    return nitron::exp<T>(-x*x);
-}
-
-int experimenting()
-{
-    #ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-    #endif
-    std::cout << std::setprecision(10);
-    for (long double x = -2; x <= 2; x += 0.05) {
-        auto [y, d] = f(nitron::DualNumber<long double>(x, 1));
-        y = std::round(y * (1ll << 20ll)) / (1ll << 20ll);
-        d = std::round(d * (1ll << 20ll)) / (1ll << 20ll);
-        std::cout << "x = " << std::setw(15) << x << ", ";
-        std::cout << "f(x) = " << std::setw(13) << y << ", ";
-        std::cout << "f'(x) = " << std::setw(13) << d << std::endl;
-    }
-    return 1;
-}
-
-int main()
-{
-    int status = experimenting();
-    if (status != 0)
-        return 0;
-    runTests();
+    Spec("Test-Driven-Development [TDD]")
+    .addTest(Test::returnsValue<long long>(
+        []() -> long long {
+            long long n = 5;
+            return n * n;
+        },
+        [](long long x) -> bool {
+            return x == 25;
+        },
+        "5x5 = 25"
+    ).expectedToPass())
+    .openSubSpec("Nested Spec")
+        .addTest(Test::throwsValueOfType<int>(
+            []() -> void {
+                throw std::invalid_argument("Hello");
+            },
+            "It should fail to throw `int`"
+        ).expectedToFail())
+    .closeSubSpec()
+    .displayResult(std::cout);
+    
     return 0;
 }

@@ -1,4 +1,4 @@
-#include "dev/Spec.hpp"
+#include <nitron/spec.hpp>
 
 namespace nitron
 {
@@ -10,7 +10,7 @@ Test Test::throwsValueOfType(FunctorTested&& function,
 {
     bool verdict = false;
     try { function(); }
-    catch(T const&) { verdict = true; }
+    catch(const T&) { verdict = true; }
     catch(...) {}
     return Test(verdict, std::forward<std::string>(description));
 }
@@ -24,7 +24,7 @@ Test Test::throwsValue(FunctorTested&& function,
 {
     bool verdict = false;
     try { function(); }
-    catch(T const& x) { verdict = checker(x); }
+    catch(const T& x) { verdict = checker(x); }
     catch(...) {}
     return Test(verdict, std::forward<std::string>(description));
 }

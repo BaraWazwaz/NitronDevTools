@@ -1,14 +1,14 @@
 /**
  * @file Spec.hpp
  * @brief implements JS-jasmine-like spec suite using @ref Test and @ref Spec classes
- * @copyright 2026 Bara Wazwaz. Released under the [GNU License](/.github/LICENSE)
  */
 #pragma once
 
-#include <iostream>         // std::ostream
-#include <string>           // std::string
-#include <vector>           // std::vector
-#include "util/Functor.hpp" // nitron::LooseFunctor
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <nitron/functor.hpp>
 
 namespace nitron
 {
@@ -78,4 +78,4 @@ private:
 
 } // namespace nitron
 
-#include "Spec.tpp"
+#include <nitron/template/spec.tpp>

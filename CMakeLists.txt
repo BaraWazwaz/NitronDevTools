@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.19.2)
 # ==========================================
 set(PROJECT_NAME_VAR   "NitronDevTools")   # Standalone root name
 set(LIB_TARGET_NAME    "nitron")           # Library name
-set(EXE_TARGET_NAME    "test")             # Executable name
+set(EXE_TARGET_NAME    "nitron_test")      # Executable name
 
 # ==========================================
 # 1. TOOLCHAIN & DEPENDENCY CONFIGURATION
@@ -54,11 +54,19 @@ endif()
 # ==========================================
 set(EXTERNAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
-set(FMT_TEST OFF CACHE BOOL "" FORCE)
-set(FMT_DOC OFF CACHE BOOL "" FORCE)
-set(FMT_INSTALL OFF CACHE BOOL "" FORCE)
+# ==========================================
+# 3. VENDORED DEPENDENCIES
+# ==========================================
+set(EXTERNAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
-add_subdirectory(${EXTERNAL_DIR}/fmt ${EXTERNAL_DIR}/fmt/build)
+# ONLY include fmt if a parent project hasn't already included it
+if(NOT TARGET fmt)
+    set(FMT_TEST OFF CACHE BOOL "" FORCE)
+    set(FMT_DOC OFF CACHE BOOL "" FORCE)
+    set(FMT_INSTALL OFF CACHE BOOL "" FORCE)
+
+    add_subdirectory(${EXTERNAL_DIR}/fmt ${EXTERNAL_DIR}/fmt/build)
+endif()
 
 # ==========================================
 # 4. INTERPROCEDURAL OPTIMIZATION (PROD ONLY)

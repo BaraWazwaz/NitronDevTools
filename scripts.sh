@@ -33,4 +33,22 @@ step_005() {
     #     be rendered correctly in case of relative resources path
 }
 
-echo "Open this file to view the scripts, this script file does not run anything by itself"
+build() {
+    mkdir ./build
+    cd ./build
+    cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug   .. # Development
+    # cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release .. # Production
+    cd ..
+}
+
+compile() {
+    cmake --build ./build
+}
+
+if [[ "$1" -eq 'build' ]]; then
+    build
+fi
+
+if [[ "$1" -eq 'compile' ]]; then
+    compile
+fi

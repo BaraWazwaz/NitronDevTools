@@ -73,6 +73,11 @@ public:
     /// @param test Test object to add to suite
     /// @return reference to current Spec 
     Spec& addTest(Test&& test);
+
+    /// @brief adds a new subspec to Spec suite
+    /// @param spec Spec object to consider as a subspec
+    /// @return reference to current Spec
+    Spec& addSubSpec(Spec&& subSpec);
     
     /// @brief creates a nested Spec inside current Spec and enters it
     /// @param title title of nested Spec created

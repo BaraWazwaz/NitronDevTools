@@ -37,6 +37,12 @@ Spec& Spec::addTest(Test&& test) {
     return *this;
 }
 
+Spec& Spec::addSubSpec(Spec&& subSpec) {
+    subSpec.parent = this;
+    this->children.emplace_back(std::forward<Spec>(subSpec));
+    return *this;
+}
+
 bool Spec::displayResult(std::ostream& os, std::size_t tabs) const {
     bool verdict = true;
     os << std::string(tabs, '\t') << "Spec { " << title << " } :\n";

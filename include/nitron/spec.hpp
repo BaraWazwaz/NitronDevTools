@@ -90,14 +90,18 @@ public:
 
     /// @brief output testing verdict information
     /// @param os   output scream used to print results
-    /// @param tabs number of `"\t"` characters used in indentation
-    bool displayResult(std::ostream& os, std::size_t tabs = 0) const;
+    inline bool displayResult(std::ostream& os) const;
 
 private:
     std::string title = "[Untitled]";
     Spec* parent      = this;
     std::vector<Test> direct;
     std::vector<Spec> children;
+
+    /// @brief output testing verdict information
+    /// @param os   output scream used to print results
+    /// @param tabs number of `"\t"` characters used in indentation
+    bool displayResult(std::ostream& os, std::size_t tabs) const;
 };
 
 } // namespace nitron

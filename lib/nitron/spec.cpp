@@ -43,6 +43,10 @@ Spec& Spec::addSubSpec(Spec&& subSpec) {
     return *this;
 }
 
+bool Spec::displayResult(std::ostream& os) const {
+    return this->displayResult(os, 0);
+}
+
 bool Spec::displayResult(std::ostream& os, std::size_t tabs) const {
     bool verdict = true;
     os << std::string(tabs, '\t') << "Spec { " << title << " } :\n";

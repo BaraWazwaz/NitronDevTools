@@ -1,7 +1,3 @@
-/**
- * @file Functor.hpp
- * @brief implements some Functor concepts
- */
 #pragma once
 
 #include <concepts>

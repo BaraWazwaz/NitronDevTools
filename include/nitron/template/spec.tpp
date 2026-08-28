@@ -3,10 +3,10 @@
 namespace nitron
 {
 
-template <typename T, typename FunctorTested>
-requires LooseFunctor<FunctorTested, void>
+template <typename T, typename Tested>
+requires LooseFunctor<Tested, void>
 Test Test::throwsValueOfType(
-    FunctorTested&& function,
+    Tested&& function,
     std::string&& description
 ) {
     bool verdict = false;
@@ -16,12 +16,12 @@ Test Test::throwsValueOfType(
     return Test(verdict, std::forward<std::string>(description));
 }
 
-template <typename T, typename FunctorTested, typename FunctorChecker>
-requires LooseFunctor<FunctorTested, void> &&
-         LooseFunctor<FunctorChecker, bool, T>
+template <typename T, typename Tested, typename Checker>
+requires LooseFunctor<Tested, void> &&
+         LooseFunctor<Checker, bool, T>
 Test Test::throwsValue(
-    FunctorTested&& function,
-    FunctorChecker&& checker,
+    Tested&& function,
+    Checker&& checker,
     std::string&& description
 ) {
     bool verdict = false;
@@ -31,12 +31,12 @@ Test Test::throwsValue(
     return Test(verdict, std::forward<std::string>(description));
 }
 
-template <typename T, typename FunctorTested, typename FunctorChecker>
-requires LooseFunctor<FunctorTested, T> &&
-         LooseFunctor<FunctorChecker, bool, T>
+template <typename T, typename Tested, typename Checker>
+requires LooseFunctor<Tested, T> &&
+         LooseFunctor<Checker, bool, T>
 Test Test::returnsValue(
-    FunctorTested&& function,
-    FunctorChecker&& checker,
+    Tested&& function,
+    Checker&& checker,
     std::string&& description
 ) {
     bool verdict = false;

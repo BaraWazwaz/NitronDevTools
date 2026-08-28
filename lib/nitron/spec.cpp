@@ -17,27 +17,27 @@ Test::Test(bool verdict, std::string&& description) :
 {}
 
 Spec::Spec(std::string&& title) :
-    title(std::forward<std::string>(title))
+    mTitle(std::forward<std::string>(title))
 {}
 
 Spec& Spec::openSubSpec(std::string&& title) {
-    this->children.emplace_back(std::forward<std::string>(title));
-    this->children.back().parent = this;
-    return this->children.back();
+    this->mSubSpecs.emplace_back(std::forward<std::string>(title));
+    this->mSubSpecs.back().mParent = this;
+    return this->mSubSpecs.back();
 }
 
 Spec& Spec::closeSubSpec() {
-    return *this->parent;
+    return *this->mParent;
 }
 
 Spec& Spec::addTest(Test&& test) {
-    this->direct.emplace_back(std::forward<Test>(test));
+    this->mTests.emplace_back(std::forward<Test>(test));
     return *this;
 }
 
 Spec& Spec::addSubSpec(Spec&& subSpec) {
-    subSpec.parent = this;
-    this->children.emplace_back(std::forward<Spec>(subSpec));
+    subSpec.mParent = this;
+    this->mSubSpecs.emplace_back(std::forward<Spec>(subSpec));
     return *this;
 }
 
@@ -48,12 +48,12 @@ bool Spec::displayResult(std::ostream& os) const {
 bool Spec::displayResult(std::ostream& os, std::size_t tabs) const {
     bool verdict = true;
     os << std::string(tabs, '\t');
-    os << "Spec { " << title << " } :\n";
+    os << "Spec { " << mTitle << " } :\n";
 
-    for (const Test& test : this->direct)
+    for (const Test& test : this->mTests)
         verdict = test.displayResult(os, tabs + 1) && verdict;
     
-    for (const Spec& spec : this->children)
+    for (const Spec& spec : this->mSubSpecs)
         verdict = spec.displayResult(os, tabs + 1) && verdict;
 
     os << std::string(tabs, '\t');
@@ -68,7 +68,7 @@ Test Test::expectedToPass() & {
 }
 
 Test Test::expectedToPass() && {
-    return Test(this->verdict, std::move(this->description));
+    return Test(this->verdict, std::move(this->mDescription));
 }
 
 Test Test::expectedToFail() & {
@@ -78,7 +78,7 @@ Test Test::expectedToFail() & {
 }
 
 Test Test::expectedToFail() && {
-    return Test(!this->verdict, std::move(this->description));
+    return Test(!this->verdict, std::move(this->mDescription));
 }
 
 } // namespace nitron

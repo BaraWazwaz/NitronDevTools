@@ -34,10 +34,8 @@ Spec::Spec(std::string&& title)
     , mParent(this) 
 {}
 
-Spec& Spec::addTest(std::unique_ptr<Test>&& test) {
-    if (test) {
-        mTests.push_back(std::move(test));
-    }
+Spec& Spec::addTest(Test&& test) {
+    mTests.emplace_back(std::move(test));
     return *this;
 }
 

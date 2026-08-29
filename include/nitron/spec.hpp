@@ -254,11 +254,12 @@ public:
     Spec(std::string&& title);
 
     /**
-     * @brief Adds a new test to the Spec suite using standard smart pointers directly.
-     * @param test A unique_ptr owning the polymorphic Test derivative.
-     * @return Reference to current Spec instance chain scope.
+     * @brief Accepts any concrete test rvalue, constructs it on the heap, and registers it.
+     * @tparam ConcreteTest The automatically deduced type of the test class.
+     * @param test The temporary test object (optionally with chained modifiers).
+     * @return Reference to the current Spec for chaining.
      */
-    Spec& addTest(std::unique_ptr<Test>&& test);
+    Spec& addTest(Test&& test);
 
     /**
      * @brief Adds a new subspec to Spec suite.

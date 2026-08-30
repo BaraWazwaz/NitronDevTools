@@ -12,6 +12,7 @@
 #include <utility>
 
 #include <nitron/functor.hpp>
+#include <nitron/deduction.hpp>
 
 namespace nitron {
 
@@ -283,13 +284,50 @@ private:
 /**
  * @brief Deduction guides for TestThrown
  */
-template <typename T, typename Tested, typename Checker>
+template <typename Tested, typename Checker>
+requires (!std::is_convertible_v<Checker, std::string>)
 TestThrown(Tested, Checker, std::string = "[No Description]")
-    -> TestThrown<T, Tested, Checker>;
+    -> TestThrown<first_argument_t<Checker>, std::decay_t<Tested>, std::decay_t<Checker>>;
 
 template <typename T, typename Tested>
 TestThrown(Tested, std::string = "[No Description]")
-    -> TestThrown<T, Tested, void>;
+    -> TestThrown<T, std::decay_t<Tested>, void>;
+
+template <typename Tested>
+TestThrown(Tested, std::string = "[No Description]")
+    -> TestThrown<void, std::decay_t<Tested>, void>;
+
+/**
+ * @brief Helper function for creating a TestThrown checking for exception of type ExceptionType.
+ */
+template <typename ExceptionType, typename Tested>
+auto testThrown(Tested&& function, std::string description = "[No Description]") {
+    return TestThrown<ExceptionType, std::decay_t<Tested>, void>(
+        std::forward<Tested>(function), std::move(description)
+    );
+}
+
+/**
+ * @brief Helper function for creating a TestThrown checking for exception with custom checker.
+ */
+template <typename Tested, typename Checker>
+requires (!std::is_convertible_v<Checker, std::string>)
+auto testThrown(Tested&& function, Checker&& checker, std::string description = "[No Description]") {
+    using ExceptionType = first_argument_t<Checker>;
+    return TestThrown<ExceptionType, std::decay_t<Tested>, std::decay_t<Checker>>(
+        std::forward<Tested>(function), std::forward<Checker>(checker), std::move(description)
+    );
+}
+
+/**
+ * @brief Helper function for creating a TestNoThrow test.
+ */
+template <typename Tested>
+auto testNoThrow(Tested&& function, std::string description = "[No Description]") {
+    return TestThrown<void, std::decay_t<Tested>, void>(
+        std::forward<Tested>(function), std::move(description)
+    );
+}
 
 /**
  * @class Spec

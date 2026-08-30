@@ -34,16 +34,16 @@ int main() {
                 isEven,
                 "computeSquare(3) expected to fail isEven check"
             ).expectedToFail())
-            .addTest(TestThrown<std::invalid_argument, void(*)()>(
+            .addTest(testThrown<std::invalid_argument>(
                 throwInvalidArgument,
                 "throwInvalidArgument() should throw std::invalid_argument"
             ))
-            .addTest(TestThrown<std::invalid_argument, void(*)(), decltype(checkInvalidMsg)>(
+            .addTest(TestThrown(
                 throwInvalidArgument,
                 checkInvalidMsg,
                 "throwInvalidArgument() exception message contains 'Invalid'"
             ))
-            .addTest(TestThrown<void, void(*)()>(
+            .addTest(TestThrown(
                 safeOperation,
                 "safeOperation() should execute without throwing"
             ))
@@ -55,11 +55,11 @@ int main() {
                 std::function<bool(int)>([](int val) { return val == 42; }),
                 "std::function returning 42"
             ))
-            .addTest(TestThrown<std::out_of_range, std::function<void()>>(
+            .addTest(testThrown<std::out_of_range>(
                 std::function<void()>([]() { throw std::out_of_range("Out of bounds"); }),
                 "std::function throwing std::out_of_range"
             ))
-            .addTest(TestThrown<std::out_of_range, std::function<void()>, std::function<bool(const std::out_of_range&)>>(
+            .addTest(TestThrown(
                 std::function<void()>([]() { throw std::out_of_range("Index 5 out of range"); }),
                 std::function<bool(const std::out_of_range&)>([](const std::out_of_range& e) {
                     return std::string(e.what()).find("Index 5") != std::string::npos;
@@ -84,7 +84,7 @@ int main() {
                 [](int val) { return val == 200; },
                 "Capturing lambda with incorrect expectation (expectedToFail)"
             ).expectedToFail())
-            .addTest(TestThrown<std::logic_error, std::function<void()>>(
+            .addTest(testThrown<std::logic_error>(
                 std::function<void()>([]() { throw std::logic_error("Logic failure"); }),
                 "Throwing lambda logic_error"
             ))

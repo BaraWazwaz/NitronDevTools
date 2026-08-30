@@ -1,27 +1,37 @@
 /**
- * @file Spec.cpp
- * @brief Explicit out-of-line class operational framework bindings implementation source file details.
+ * @file spec.cpp
+ * @brief Implements Test-Driven-Development (TDD) testing suite.
  */
-#include "Spec.hpp"
+#include <nitron/spec.hpp>
 
 namespace nitron {
 
-Test::Test(std::string&& description)
-    : mDescription(std::move(description)) 
+Test::Test(std::string description)
+    : mDescription(std::move(description))
 {}
 
 bool Test::judge() const {
     return check() == mExpectedToPass;
 }
 
-Test& Test::expectedToPass() {
+Test& Test::expectedToPass() & {
     mExpectedToPass = true;
     return *this;
 }
 
-Test& Test::expectedToFail() {
+Test&& Test::expectedToPass() && {
+    mExpectedToPass = true;
+    return std::move(*this);
+}
+
+Test& Test::expectedToFail() & {
     mExpectedToPass = false;
     return *this;
+}
+
+Test&& Test::expectedToFail() && {
+    mExpectedToPass = false;
+    return std::move(*this);
 }
 
 std::ostream& operator<<(std::ostream& os, const Test& test) {
@@ -29,26 +39,45 @@ std::ostream& operator<<(std::ostream& os, const Test& test) {
     return os;
 }
 
-Spec::Spec(std::string&& title)
+Spec::Spec(std::string title)
     : mTitle(std::move(title))
-    , mParent(this) 
+    , mParent(this)
 {}
 
-Spec& Spec::addTest(Test&& test) {
-    mTests.emplace_back(std::move(test));
+Spec::Spec(Spec&& other) noexcept
+    : mTitle(std::move(other.mTitle))
+    , mParent(other.mParent == &other ? this : other.mParent)
+    , mTests(std::move(other.mTests))
+    , mSubSpecs(std::move(other.mSubSpecs))
+{
+    for (auto& child : mSubSpecs) {
+        child.mParent = this;
+    }
+}
+
+Spec& Spec::operator=(Spec&& other) noexcept {
+    if (this != &other) {
+        mTitle = std::move(other.mTitle);
+        mParent = (other.mParent == &other) ? this : other.mParent;
+        mTests = std::move(other.mTests);
+        mSubSpecs = std::move(other.mSubSpecs);
+        for (auto& child : mSubSpecs) {
+            child.mParent = this;
+        }
+    }
     return *this;
 }
 
 Spec& Spec::addSubSpec(Spec&& subSpec) {
     subSpec.mParent = this;
-    mSubSpecs.emplace_back(std::move(subSpec));
+    mSubSpecs.push_back(std::move(subSpec));
     return *this;
 }
 
-Spec& Spec::openSubSpec(std::string&& title) {
+Spec& Spec::openSubSpec(std::string title) {
     Spec nested(std::move(title));
     nested.mParent = this;
-    mSubSpecs.emplace_back(std::move(nested));
+    mSubSpecs.push_back(std::move(nested));
     return mSubSpecs.back();
 }
 
@@ -56,7 +85,7 @@ Spec& Spec::closeSubSpec() {
     return *mParent;
 }
 
-inline bool Spec::displayResult(std::ostream& os) const {
+bool Spec::displayResult(std::ostream& os) const {
     return displayResult(os, 0);
 }
 

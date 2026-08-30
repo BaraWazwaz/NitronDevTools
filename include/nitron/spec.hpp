@@ -1,6 +1,6 @@
 /**
- * @file Spec.hpp
- * @brief implements JS-jasmine-like spec suite using @ref Test and @ref Spec classes
+ * @file spec.hpp
+ * @brief Implements Test-Driven-Development (TDD) testing suite.
  */
 #pragma once
 
@@ -25,12 +25,27 @@ public:
      * @brief Constructs a Test object.
      * @param description Test title or message.
      */
-    Test(std::string&& description = "[No Description]");
+    Test(std::string description = "[No Description]");
+
+    Test(const Test&) = default;
+    Test(Test&&) noexcept = default;
+    Test& operator=(const Test&) = default;
+    Test& operator=(Test&&) noexcept = default;
 
     /**
      * @brief Virtual destructor.
      */
     virtual ~Test() = default;
+
+    /**
+     * @brief Creates a heap-allocated copy of this test.
+     */
+    virtual std::unique_ptr<Test> clone() const & = 0;
+
+    /**
+     * @brief Creates a heap-allocated move of this test.
+     */
+    virtual std::unique_ptr<Test> clone() && = 0;
 
     /**
      * @brief Evaluates the final outcome of the test suite validation tracking logic.
@@ -42,13 +57,25 @@ public:
      * @brief Configures the verification criteria to flag success when the underlying execution passes.
      * @return Reference to the current modified Test instance.
      */
-    Test& expectedToPass();
+    Test& expectedToPass() &;
+
+    /**
+     * @brief Configures the verification criteria to flag success when the underlying execution passes.
+     * @return Reference to the current modified Test instance.
+     */
+    Test&& expectedToPass() &&;
 
     /**
      * @brief Configures the verification criteria to invert evaluation outcomes (expects failure).
      * @return Reference to the current modified Test instance.
      */
-    Test& expectedToFail();
+    Test& expectedToFail() &;
+
+    /**
+     * @brief Configures the verification criteria to invert evaluation outcomes (expects failure).
+     * @return Reference to the current modified Test instance.
+     */
+    Test&& expectedToFail() &&;
 
     /**
      * @brief Overloaded stream insertion operator for Test visualization.
@@ -56,7 +83,7 @@ public:
      * @param test Concrete Test reference to output.
      * @return Reference to the output stream.
      */
-    inline friend std::ostream& operator<<(std::ostream& os, const Test& test);
+    friend std::ostream& operator<<(std::ostream& os, const Test& test);
 
 protected:
     /**
@@ -65,14 +92,8 @@ protected:
      */
     virtual bool check() const = 0;
 
-    Test(const Test&) = default;
-    Test(Test&&) noexcept = default;
-    Test& operator=(const Test&) = default;
-    Test& operator=(Test&&) noexcept = default;
-
-    std::string mDescription;
-
 private:
+    std::string mDescription;
     bool mExpectedToPass = true;
 };
 
@@ -99,10 +120,13 @@ public:
      * @param description Test title or message context.
      */
     TestReturned(
-        Tested&& function,
-        Checker&& checker,
-        std::string&& description = "[No Description]"
+        Tested function,
+        Checker checker,
+        std::string description = "[No Description]"
     );
+
+    std::unique_ptr<Test> clone() const & override;
+    std::unique_ptr<Test> clone() && override;
 
 protected:
     /**
@@ -116,10 +140,21 @@ private:
 };
 
 /**
+ * @brief Deduction guide for TestReturned
+ */
+template <typename Tested, typename Checker>
+TestReturned(Tested, Checker, std::string = "[No Description]")
+    -> TestReturned<
+        std::invoke_result_t<Tested>,
+        Tested,
+        Checker
+    >;
+
+/**
  * @class TestThrown
  * @brief Primary unspecialized blueprint configuration for assertion verification tracking.
  */
-template <typename T, typename Tested, typename Checker>
+template <typename T = void, typename Tested = void, typename Checker = void>
 class TestThrown;
 
 /**
@@ -146,10 +181,13 @@ public:
      * @param description Test title or context message details.
      */
     TestThrown(
-        Tested&& function,
-        Checker&& checker,
-        std::string&& description = "[No Description]"
+        Tested function,
+        Checker checker,
+        std::string description = "[No Description]"
     );
+
+    std::unique_ptr<Test> clone() const & override;
+    std::unique_ptr<Test> clone() && override;
 
 protected:
     /**
@@ -185,9 +223,12 @@ public:
      * @param description Test title or context statement identifier profile.
      */
     TestThrown(
-        Tested&& function,
-        std::string&& description = "[No Description]"
+        Tested function,
+        std::string description = "[No Description]"
     );
+
+    std::unique_ptr<Test> clone() const & override;
+    std::unique_ptr<Test> clone() && override;
 
 protected:
     /**
@@ -222,9 +263,12 @@ public:
      * @param description Test title or context message logging data string.
      */
     TestThrown(
-        Tested&& function,
-        std::string&& description = "[No Description]"
+        Tested function,
+        std::string description = "[No Description]"
     );
+
+    std::unique_ptr<Test> clone() const & override;
+    std::unique_ptr<Test> clone() && override;
 
 protected:
     /**
@@ -235,6 +279,17 @@ protected:
 private:
     Tested mFunction;
 };
+
+/**
+ * @brief Deduction guides for TestThrown
+ */
+template <typename T, typename Tested, typename Checker>
+TestThrown(Tested, Checker, std::string = "[No Description]")
+    -> TestThrown<T, Tested, Checker>;
+
+template <typename T, typename Tested>
+TestThrown(Tested, std::string = "[No Description]")
+    -> TestThrown<T, Tested, void>;
 
 /**
  * @class Spec
@@ -248,18 +303,26 @@ public:
     Spec() = default;
 
     /**
-     * @brief Parameterized initialization assignment tracking tracking suite structures.
+     * @brief Parameterized initialization tracking suite structures.
      * @param title Root identifier matching test environment target scopes.
      */
-    Spec(std::string&& title);
+    Spec(std::string title);
+
+    Spec(const Spec&) = delete;
+    Spec& operator=(const Spec&) = delete;
+
+    Spec(Spec&& other) noexcept;
+    Spec& operator=(Spec&& other) noexcept;
 
     /**
      * @brief Accepts any concrete test rvalue, constructs it on the heap, and registers it.
-     * @tparam ConcreteTest The automatically deduced type of the test class.
+     * @tparam TestClass The automatically deduced type of the test class.
      * @param test The temporary test object (optionally with chained modifiers).
      * @return Reference to the current Spec for chaining.
      */
-    Spec& addTest(Test&& test);
+    template <typename TestClass>
+    requires std::is_base_of_v<Test, std::remove_cvref_t<TestClass>>
+    Spec& addTest(TestClass&& test);
 
     /**
      * @brief Adds a new subspec to Spec suite.
@@ -273,7 +336,7 @@ public:
      * @param title Title of nested Spec created.
      * @return Reference to nested Spec created.
      */
-    Spec& openSubSpec(std::string&& title);
+    Spec& openSubSpec(std::string title);
 
     /**
      * @brief Finishes working on nested Spec and goes back to parent.
@@ -286,7 +349,7 @@ public:
      * @param os Output stream used to print results.
      * @return True if all containing elements execute without recording failure logs, false otherwise.
      */
-    inline bool displayResult(std::ostream& os) const;
+    bool displayResult(std::ostream& os) const;
 
 private:
     std::string mTitle = "[Untitled]";

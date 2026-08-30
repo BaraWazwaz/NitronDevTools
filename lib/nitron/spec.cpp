@@ -4,6 +4,10 @@
  */
 #include <nitron/spec.hpp>
 
+#include <fmt/core.h>
+#include <fmt/color.h>
+#include <fmt/ostream.h>
+
 namespace nitron {
 
 Test::Test(std::string description)
@@ -85,32 +89,62 @@ Spec& Spec::closeSubSpec() {
     return *mParent;
 }
 
+struct SpecStats {
+    std::size_t passed = 0;
+    std::size_t failed = 0;
+    inline std::size_t total() const { return passed + failed; }
+};
+
 bool Spec::displayResult(std::ostream& os) const {
-    return displayResult(os, 0);
+    SpecStats stats;
+    bool success = displayResult(os, 0, stats);
+
+    fmt::print(os, "\n{}\n", fmt::format(fmt::fg(fmt::color::gray), "--------------------------------------------------"));
+    
+    auto passedStr = fmt::format(fmt::fg(fmt::color::green) | fmt::emphasis::bold, "{} passed", stats.passed);
+    auto failedStr = stats.failed > 0
+        ? fmt::format(fmt::fg(fmt::color::red)   | fmt::emphasis::bold, "{} failed", stats.failed)
+        : fmt::format(fmt::fg(fmt::color::green) | fmt::emphasis::bold, "{} failed", stats.failed);
+
+    fmt::print(os, "Results: {}, {} ({} total)\n", passedStr, failedStr, stats.total());
+
+    return success;
 }
 
 bool Spec::displayResult(std::ostream& os, std::size_t tabs) const {
-    bool baselineStatusTracker = true;
+    SpecStats dummyStats;
+    return displayResult(os, tabs, dummyStats);
+}
+
+bool Spec::displayResult(std::ostream& os, std::size_t tabs, SpecStats& stats) const {
+    bool overallSuccess = true;
     std::string indentPadding(tabs, '\t');
     
-    os << indentPadding << "Suite: " << mTitle << "\n";
+    fmt::print(os, "{}{}\n", indentPadding, fmt::format(fmt::fg(fmt::color::cyan) | fmt::emphasis::bold, "Suite: {}", mTitle));
     
-    for (const auto& internalCaseElement : mTests) {
-        bool operationalStateResult = internalCaseElement->judge();
-        os << indentPadding << "  " << (operationalStateResult ? "[PASS] " : "[FAIL] ") 
-           << *internalCaseElement << "\n";
-        if (!operationalStateResult) {
-            baselineStatusTracker = false;
+    for (const auto& test : mTests) {
+        bool result = test->judge();
+        if (result) {
+            stats.passed++;
+        } else {
+            stats.failed++;
+            overallSuccess = false;
+        }
+
+        auto statusBadge = result
+            ? fmt::format(fmt::fg(fmt::color::green) | fmt::emphasis::bold, "[PASS] ")
+            : fmt::format(fmt::fg(fmt::color::red)   | fmt::emphasis::bold, "[FAIL] ");
+
+        fmt::print(os, "{}  {}{}\n", indentPadding, statusBadge, fmt::streamed(*test));
+    }
+    
+    for (const auto& subSpec : mSubSpecs) {
+        if (!subSpec.displayResult(os, tabs + 1, stats)) {
+            overallSuccess = false;
         }
     }
     
-    for (const auto& activeSubSuiteNode : mSubSpecs) {
-        if (!activeSubSuiteNode.displayResult(os, tabs + 1)) {
-            baselineStatusTracker = false;
-        }
-    }
-    
-    return baselineStatusTracker;
+    return overallSuccess;
 }
 
 } // namespace nitron

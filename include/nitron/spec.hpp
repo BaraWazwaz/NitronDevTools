@@ -329,6 +329,8 @@ auto testNoThrow(Tested&& function, std::string description = "[No Description]"
     );
 }
 
+struct SpecStats;
+
 /**
  * @class Spec
  * @brief Suite interface mimicking behavior models seen across testing runtime designs.
@@ -399,6 +401,7 @@ private:
      * @brief Implementation variant parsing step processing operations printing diagnostics output to targeted streams.
      */
     bool displayResult(std::ostream& os, std::size_t tabs) const;
+    bool displayResult(std::ostream& os, std::size_t tabs, SpecStats& stats) const;
 };
 
 } // namespace nitron

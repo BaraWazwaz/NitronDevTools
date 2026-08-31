@@ -16,11 +16,15 @@
 
 namespace nitron {
 
+class Spec;
+
 /**
  * @class Test
  * @brief Abstract base class representing a generic test case with evaluation modifiers.
  */
 class Test {
+    friend class Spec;
+
 public:
     /**
      * @brief Constructs a Test object.
@@ -37,16 +41,6 @@ public:
      * @brief Virtual destructor.
      */
     virtual ~Test() = default;
-
-    /**
-     * @brief Creates a heap-allocated copy of this test.
-     */
-    virtual std::unique_ptr<Test> clone() const & = 0;
-
-    /**
-     * @brief Creates a heap-allocated move of this test.
-     */
-    virtual std::unique_ptr<Test> clone() && = 0;
 
     /**
      * @brief Evaluates the final outcome of the test suite validation tracking logic.
@@ -77,7 +71,7 @@ public:
      * @return Reference to the current modified Test instance.
      */
     Test&& expectedToFail() &&;
-
+    
     /**
      * @brief Overloaded stream insertion operator for Test visualization.
      * @param os Output stream reference.
@@ -92,6 +86,16 @@ protected:
      * @return true if the structural engine criteria are met, false otherwise.
      */
     virtual bool check() const = 0;
+
+    /**
+     * @brief Creates a heap-allocated copy of this test.
+     */
+    virtual std::unique_ptr<Test> clone() const & = 0;
+
+    /**
+     * @brief Creates a heap-allocated move of this test.
+     */
+    virtual std::unique_ptr<Test> clone() && = 0;
 
 private:
     std::string mDescription;
@@ -113,6 +117,8 @@ concept is_valid_TestReturned =
 template <typename T, typename Tested, typename Checker>
 requires is_valid_TestReturned<T, Tested, Checker> 
 class TestReturned : public Test {
+    friend class Spec;
+
 public:
     /**
      * @brief Constructs a TestReturned tracker wrapper.
@@ -125,15 +131,22 @@ public:
         Checker checker,
         std::string description = "[No Description]"
     );
-
-    std::unique_ptr<Test> clone() const & override;
-    std::unique_ptr<Test> clone() && override;
-
+    
 protected:
     /**
      * @brief Executes the target function and runs the return value through the checker function.
      */
     bool check() const override;
+
+    /**
+     * @brief Creates a heap-allocated copy of this test.
+     */
+    std::unique_ptr<Test> clone() const & override;
+
+    /**
+     * @brief Creates a heap-allocated move of this test.
+     */
+    std::unique_ptr<Test> clone() && override;
 
 private:
     Tested mFunction;
@@ -174,6 +187,8 @@ concept is_valid_TestThrownWithChecker =
 template <typename T, typename Tested, typename Checker>
 requires is_valid_TestThrownWithChecker<T, Tested, Checker>
 class TestThrown<T, Tested, Checker> : public Test {
+    friend class Spec;
+
 public:
     /**
      * @brief Constructs an exception instance evaluator target tracker wrapper.
@@ -187,14 +202,21 @@ public:
         std::string description = "[No Description]"
     );
 
-    std::unique_ptr<Test> clone() const & override;
-    std::unique_ptr<Test> clone() && override;
-
 protected:
     /**
      * @brief Executes the target function, catches the thrown exception of type T, and runs it through the checker.
      */
     bool check() const override;
+
+    /**
+     * @brief Creates a heap-allocated copy of this test.
+     */
+    std::unique_ptr<Test> clone() const & override;
+
+    /**
+     * @brief Creates a heap-allocated move of this test.
+     */
+    std::unique_ptr<Test> clone() && override;
 
 private:
     Tested mFunction;
@@ -217,6 +239,8 @@ concept is_valid_TestThrownTypeOnly =
 template <typename T, typename Tested, typename Checker>
 requires is_valid_TestThrownTypeOnly<T, Tested, Checker>
 class TestThrown<T, Tested, Checker> : public Test {
+    friend class Spec;
+
 public:
     /**
      * @brief Constructs a clean instance framework capturing structural exception matching profiles.
@@ -228,14 +252,21 @@ public:
         std::string description = "[No Description]"
     );
 
-    std::unique_ptr<Test> clone() const & override;
-    std::unique_ptr<Test> clone() && override;
-
 protected:
     /**
      * @brief Executes the target function and intercepts exceptions to verify the thrown instance type.
      */
     bool check() const override;
+
+    /**
+     * @brief Creates a heap-allocated copy of this test.
+     */
+    std::unique_ptr<Test> clone() const & override;
+
+    /**
+     * @brief Creates a heap-allocated move of this test.
+     */
+    std::unique_ptr<Test> clone() && override;
 
 private:
     Tested mFunction;
@@ -257,6 +288,8 @@ concept is_valid_TestNoThrow =
 template <typename T, typename Tested, typename Checker>
 requires is_valid_TestNoThrow<T, Tested, Checker>
 class TestThrown<T, Tested, Checker> : public Test {
+    friend class Spec;
+
 public:
     /**
      * @brief Constructs a No-Throw validation runtime engine assertion track proxy state instance block.
@@ -268,14 +301,21 @@ public:
         std::string description = "[No Description]"
     );
 
-    std::unique_ptr<Test> clone() const & override;
-    std::unique_ptr<Test> clone() && override;
-
 protected:
     /**
      * @brief Executes the target function and tracks runtime path status properties to verify that no exceptions escape.
      */
     bool check() const override;
+
+    /**
+     * @brief Creates a heap-allocated copy of this test.
+     */
+    std::unique_ptr<Test> clone() const & override;
+
+    /**
+     * @brief Creates a heap-allocated move of this test.
+     */
+    std::unique_ptr<Test> clone() && override;
 
 private:
     Tested mFunction;
@@ -296,6 +336,18 @@ TestThrown(Tested, std::string = "[No Description]")
 template <typename Tested>
 TestThrown(Tested, std::string = "[No Description]")
     -> TestThrown<void, std::decay_t<Tested>, void>;
+
+/**
+ * @brief Helper function for creating a TestReturned checking for return value with custom checker.
+ */
+template <typename Tested, typename Checker>
+requires (!std::is_convertible_v<Checker, std::string>)
+auto testReturned(Tested&& function, Checker&& checker, std::string description = "[No Description]") {
+    using ReturnType = std::invoke_result_t<std::decay_t<Tested>>;
+    return TestReturned<ReturnType, std::decay_t<Tested>, std::decay_t<Checker>>(
+        std::forward<Tested>(function), std::forward<Checker>(checker), std::move(description)
+    );
+}
 
 /**
  * @brief Helper function for creating a TestThrown checking for exception of type ExceptionType.

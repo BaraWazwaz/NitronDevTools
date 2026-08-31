@@ -24,12 +24,12 @@ int main() {
 
     Spec("`nitron/spec.hpp` Test Suite")
         .openSubSpec("1. Free Functions")
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 []() { return computeSquare(4); },
                 [](int res) { return res == 16; },
                 "computeSquare(4) should return 16"
             ))
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 []() { return computeSquare(3); },
                 isEven,
                 "computeSquare(3) expected to fail isEven check"
@@ -38,19 +38,19 @@ int main() {
                 throwInvalidArgument,
                 "throwInvalidArgument() should throw std::invalid_argument"
             ))
-            .addTest(TestThrown(
+            .addTest(testThrown(
                 throwInvalidArgument,
                 checkInvalidMsg,
                 "throwInvalidArgument() exception message contains 'Invalid'"
             ))
-            .addTest(TestThrown(
+            .addTest(testNoThrow(
                 safeOperation,
                 "safeOperation() should execute without throwing"
             ))
         .closeSubSpec()
 
         .openSubSpec("2. std::function Objects")
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 std::function<int()>([]() { return 42; }),
                 std::function<bool(int)>([](int val) { return val == 42; }),
                 "std::function returning 42"
@@ -59,7 +59,7 @@ int main() {
                 std::function<void()>([]() { throw std::out_of_range("Out of bounds"); }),
                 "std::function throwing std::out_of_range"
             ))
-            .addTest(TestThrown(
+            .addTest(testThrown(
                 std::function<void()>([]() { throw std::out_of_range("Index 5 out of range"); }),
                 std::function<bool(const std::out_of_range&)>([](const std::out_of_range& e) {
                     return std::string(e.what()).find("Index 5") != std::string::npos;
@@ -69,17 +69,17 @@ int main() {
         .closeSubSpec()
 
         .openSubSpec("3. Lambda Functions")
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 []() { int a = 3; int b = 7; return a + b; },
                 [](int sum) { return sum == 10; },
                 "Non-capturing lambda addition (3 + 7 = 10)"
             ))
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 [multiplier = 5]() { return multiplier * 3; },
                 [](int product) { return product == 15; },
                 "Capturing lambda multiplication (5 * 3 = 15)"
             ))
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 [offset = 100]() { return offset + 5; },
                 [](int val) { return val == 200; },
                 "Capturing lambda with incorrect expectation (expectedToFail)"
@@ -91,12 +91,12 @@ int main() {
         .closeSubSpec()
 
         .openSubSpec("4. Evaluation Modifiers (expectedToPass / expectedToFail)")
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 []() { return true; },
                 [](bool b) { return b; },
                 "Passing test with expectedToPass"
             ).expectedToPass())
-            .addTest(TestReturned(
+            .addTest(testReturned(
                 []() { return false; },
                 [](bool b) { return b; },
                 "Failing test correctly marked with expectedToFail"

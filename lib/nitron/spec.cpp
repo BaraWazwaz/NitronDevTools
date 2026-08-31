@@ -72,20 +72,20 @@ Spec& Spec::operator=(Spec&& other) noexcept {
     return *this;
 }
 
-Spec& Spec::addSubSpec(Spec&& subSpec) {
+Spec& Spec::add(Spec&& subSpec) {
     subSpec.mParent = this;
     mSubSpecs.push_back(std::move(subSpec));
     return *this;
 }
 
-Spec& Spec::openSubSpec(std::string title) {
+Spec& Spec::enter(std::string title) {
     Spec nested(std::move(title));
     nested.mParent = this;
     mSubSpecs.push_back(std::move(nested));
     return mSubSpecs.back();
 }
 
-Spec& Spec::closeSubSpec() {
+Spec& Spec::leave() {
     return *mParent;
 }
 
@@ -95,9 +95,9 @@ struct SpecStats {
     inline std::size_t total() const { return passed + failed; }
 };
 
-bool Spec::displayResult(std::ostream& os) const {
+bool Spec::report(std::ostream& os) const {
     SpecStats stats;
-    bool success = displayResult(os, 0, stats);
+    bool success = report(os, 0, stats);
 
     fmt::print(os, "\n{}\n", fmt::format(fmt::fg(fmt::color::gray), "--------------------------------------------------"));
     
@@ -111,12 +111,7 @@ bool Spec::displayResult(std::ostream& os) const {
     return success;
 }
 
-bool Spec::displayResult(std::ostream& os, std::size_t tabs) const {
-    SpecStats dummyStats;
-    return displayResult(os, tabs, dummyStats);
-}
-
-bool Spec::displayResult(std::ostream& os, std::size_t tabs, SpecStats& stats) const {
+bool Spec::report(std::ostream& os, std::size_t tabs, SpecStats& stats) const {
     bool overallSuccess = true;
     std::string indentPadding(tabs, '\t');
     
@@ -139,7 +134,7 @@ bool Spec::displayResult(std::ostream& os, std::size_t tabs, SpecStats& stats) c
     }
     
     for (const auto& subSpec : mSubSpecs) {
-        if (!subSpec.displayResult(os, tabs + 1, stats)) {
+        if (!subSpec.report(os, tabs + 1, stats)) {
             overallSuccess = false;
         }
     }

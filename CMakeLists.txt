@@ -1,134 +1,139 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.19.2)
 
-# ============================================================================
-# Read project.json
-# ============================================================================
+# ==========================================
+# 0. PROJECT CONFIGURATION NAMES
+# ==========================================
+set(PROJECT_NAME_VAR   "NitronDevTools")   # Standalone root name
+set(LIB_TARGET_NAME    "nitron")           # Library name
+set(EXE_TARGET_NAME    "nitron_test")      # Executable name
 
-file(READ
-    "${CMAKE_CURRENT_SOURCE_DIR}/project.json"
-    PROJECT_JSON
-)
-
-string(JSON PROJECT_NAME
-    GET "${PROJECT_JSON}" "name"
-)
-
-string(JSON PROJECT_VERSION
-    GET "${PROJECT_JSON}" "version"
-)
-
-string(JSON PROJECT_STANDARD
-    GET "${PROJECT_JSON}" "standard"
-)
-
-if(PROJECT_NAME STREQUAL "PROJECT_NAME-NOTFOUND" OR PROJECT_NAME STREQUAL "")
-    message(FATAL_ERROR
-        "project.json does not contain a valid 'name'."
-    )
+# ==========================================
+# 1. TOOLCHAIN & DEPENDENCY CONFIGURATION
+# ==========================================
+# Note: We cannot check CMAKE_PROJECT_NAME here because project() isn't declared yet.
+# We explicitly set compilers only if this CMakeLists.txt is the root entry point.
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(IS_SUBPROJECT FALSE)
+    if(WIN32)
+        set(CMAKE_C_COMPILER "C:/msys64/ucrt64/bin/gcc.exe")
+        set(CMAKE_CXX_COMPILER "C:/msys64/ucrt64/bin/g++.exe")
+    endif()
+else()
+    set(IS_SUBPROJECT TRUE)
 endif()
 
-if(PROJECT_VERSION STREQUAL "PROJECT_VERSION-NOTFOUND" OR PROJECT_VERSION STREQUAL "")
-    set(PROJECT_VERSION "0.1.0")
-endif()
+project(${PROJECT_NAME_VAR} LANGUAGES CXX)
 
-if(PROJECT_STANDARD STREQUAL "PROJECT_STANDARD-NOTFOUND" OR PROJECT_STANDARD STREQUAL "")
-    set(PROJECT_STANDARD 20)
-endif()
-
-# ============================================================================
-# Project
-# ============================================================================
-
-project(${PROJECT_NAME}
-    VERSION ${PROJECT_VERSION}
-    LANGUAGES CXX
-)
-
-set(CMAKE_CXX_STANDARD ${PROJECT_STANDARD})
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# ============================================================================
-# Dependencies
-# ============================================================================
-
-include(FetchContent)
-
-string(JSON DEPENDENCY_COUNT
-    LENGTH "${PROJECT_JSON}" "dependencies"
-)
-
-if(DEPENDENCY_COUNT GREATER 0)
-
-    math(EXPR LAST_DEPENDENCY_INDEX
-        "${DEPENDENCY_COUNT} - 1"
-    )
-
-    # ------------------------------------------------------------------------
-    # Declare all dependencies first.
-    # ------------------------------------------------------------------------
-
-    foreach(INDEX RANGE 0 ${LAST_DEPENDENCY_INDEX})
-
-        string(JSON DEP_ALIAS
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "alias"
-        )
-
-        string(JSON DEP_URL
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "url"
-        )
-
-        string(JSON DEP_TAG
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "tag"
-        )
-
-        if(
-            DEP_ALIAS STREQUAL ""
-            OR DEP_URL STREQUAL ""
-            OR DEP_TAG STREQUAL ""
-        )
-            message(FATAL_ERROR
-                "Dependency at index ${INDEX} is missing "
-                "alias, url, or tag."
-            )
-        endif()
-
-        FetchContent_Declare(
-            ${DEP_ALIAS}
-
-            GIT_REPOSITORY
-                "${DEP_URL}"
-
-            GIT_TAG
-                "${DEP_TAG}"
-        )
-
-    endforeach()
-
-    # ------------------------------------------------------------------------
-    # Make all dependencies available.
-    # ------------------------------------------------------------------------
-
-    foreach(INDEX RANGE 0 ${LAST_DEPENDENCY_INDEX})
-
-        string(JSON DEP_ALIAS
-            GET "${PROJECT_JSON}"
-            "dependencies" ${INDEX} "alias"
-        )
-
-        FetchContent_MakeAvailable(${DEP_ALIAS})
-
-    endforeach()
-
+# Handle Build Type / Production Mode forcing
+if(IS_SUBPROJECT)
+    # FORCE Production/Release optimizations for nitron targets even if parent is Debug
+    message(STATUS "[nitron] Building dependency targets in Production (Release) mode.")
+else()
+    # Standalone default fallback
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose build type" FORCE)
+    endif()
 endif()
 
-# ============================================================================
-# Project targets
-# ============================================================================
+# ==========================================
+# 2. USER SWITCHES & OPTIONS
+# ==========================================
+if(IS_SUBPROJECT)
+    # Turn off the test executable by default when used inside another project
+    option(BUILD_EXECUTABLE "Build the main application executable" OFF)
+else()
+    option(BUILD_EXECUTABLE "Build the main application executable" ON)
+endif()
 
-add_subdirectory(src)
+# ==========================================
+# 3. VENDORED DEPENDENCIES
+# ==========================================
+set(EXTERNAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
+
+# ==========================================
+# 3. VENDORED DEPENDENCIES
+# ==========================================
+set(EXTERNAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
+
+# ONLY include fmt if a parent project hasn't already included it
+if(NOT TARGET fmt)
+    set(FMT_TEST OFF CACHE BOOL "" FORCE)
+    set(FMT_DOC OFF CACHE BOOL "" FORCE)
+    set(FMT_INSTALL OFF CACHE BOOL "" FORCE)
+
+    add_subdirectory(${EXTERNAL_DIR}/fmt ${EXTERNAL_DIR}/fmt/build)
+endif()
+
+# ==========================================
+# 4. INTERPROCEDURAL OPTIMIZATION (PROD ONLY)
+# ==========================================
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error LANGUAGES CXX)
+
+if(ipo_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+else()
+    message(STATUS "IPO/LTO is not supported: ${ipo_error}")
+endif()
+
+# ==========================================
+# 5. INDEPENDENT LIBRARY TARGET (From ./lib/)
+# ==========================================
+file(GLOB LIB_SOURCES CONFIGURE_DEPENDS RECURSIVE "${CMAKE_CURRENT_SOURCE_DIR}/lib/**/*.cpp")
+
+if(NOT LIB_SOURCES)
+    message(FATAL_ERROR "No library source files found in ${CMAKE_CURRENT_SOURCE_DIR}/lib/")
+endif()
+
+add_library(${LIB_TARGET_NAME} ${LIB_SOURCES})
+
+target_include_directories(${LIB_TARGET_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(${LIB_TARGET_NAME} PUBLIC fmt::fmt)
+
+target_compile_definitions(
+    ${LIB_TARGET_NAME} 
+    PUBLIC 
+    RESOURCES_PATH=\"./resources/\"#"
+)
+
+if(IS_SUBPROJECT)
+    target_compile_definitions(${LIB_TARGET_NAME} PUBLIC NDEBUG)
+    target_compile_options(${LIB_TARGET_NAME} PRIVATE -O3)
+    if(ipo_supported)
+        set_target_properties(${LIB_TARGET_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
+    endif()
+else()
+    target_compile_definitions(${LIB_TARGET_NAME} PUBLIC 
+        $<$<CONFIG:Debug>:DEVELOPMENT_MODE=1>
+        $<$<CONFIG:Release>:NDEBUG>
+    )
+    target_compile_options(${LIB_TARGET_NAME} PRIVATE
+        $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic>
+        $<$<CONFIG:Release>:-O3>
+    )
+    if(ipo_supported)
+        set_target_properties(${LIB_TARGET_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    endif()
+endif()
+
+# ==========================================
+# 6. CONDITIONAL EXECUTABLE TARGET (From ./src/)
+# ==========================================
+if(BUILD_EXECUTABLE)
+    file(GLOB EXE_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+
+    if(NOT EXE_SOURCES)
+        message(FATAL_ERROR "No executable source files found in ${CMAKE_CURRENT_SOURCE_DIR}/src/")
+    endif()
+
+    add_executable(${EXE_TARGET_NAME} ${EXE_SOURCES})
+    target_link_libraries(${EXE_TARGET_NAME} PRIVATE ${LIB_TARGET_NAME})
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_link_options(${EXE_TARGET_NAME} PRIVATE "-static-libgcc" "-static-libstdc++" "-static")
+    endif()
+endif()
